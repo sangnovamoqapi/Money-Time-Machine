@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The True Goal | Visualize Your Purchasing Power</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #10b981;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #f8fafc;
+        }
+        .hidden { display: none; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4 flex flex-col items-center">
+    <header class="text-center mb-8 w-full max-w-5xl flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold">The True<span class="gradient-text"> Goal</span></h1>
+            <p class="text-slate-400 text-sm">Visualize your purchasing power and runway.</p>
+        </div>
+        <nav class="flex gap-4">
+            <button id="viewCoreBtn" class="px-4 py-2 font-semibold tab-active transition-all">Goal Calculator</button>
+            <button id="viewRunwayBtn" class="px-4 py-2 font-semibold text-slate-400 hover:text-white transition-all">Runway Explorer</button>
+        </nav>
+    </header>
+
+    <main class="w-full max-w-6xl">
+        <!-- Core Calculator View -->
+        <div id="coreView" class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <!-- Input Section -->
+            <section class="glass p-8 rounded-3xl space-y-8">
+                <h2 class="text-xl font-semibold border-b border-slate-700 pb-4">Define Your Goal</h2>
+                
+                <div class="space-y-4">
+                    <label class="block text-sm font-medium text-slate-400">Target Amount (Life style cost today)</label>
+                    <div class="relative">
+                        <input type="text" id="targetAmountInput" placeholder="e.g. 1,00,00,000" 
+                            class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl py-4 px-5 text-2xl font-bold focus:border-blue-500 focus:outline-none transition-colors">
+                        <span id="amountHint" class="absolute right-4 bottom-[-1.5rem] text-xs text-slate-500"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-slate-400">Target Year</label>
+                        <input type="number" id="targetYearInput" value="2035" 
+                            class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl py-3 px-4 text-xl font-bold focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-slate-400">Current Year</label>
+                        <input type="number" id="currentYearInput" 
+                            class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl py-3 px-4 text-xl font-bold focus:border-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4">
+                    <div class="flex justify-between">
+                        <label class="text-sm font-medium text-slate-400">Inflation Rate (%)</label>
+                        <span id="inflationValue" class="text-emerald-400 font-bold">6%</span>
+                    </div>
+                    <input type="range" id="inflationRateSlider" min="0" max="15" step="0.5" value="6">
+                </div>
+            </section>
+
+            <!-- Output Section -->
+            <section class="space-y-6">
+                <div class="glass p-10 rounded-3xl border-blue-500/30 border-2 relative overflow-hidden group">
+                    <p class="text-sm font-semibold tracking-widest text-blue-400 uppercase mb-6">The True Goal</p>
+                    
+                    <div id="timeTravelAlert" class="hidden mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400 text-sm font-medium italic">
+                        <!-- Dynamic message -->
+                    </div>
+
+                    <h3 id="mainGoalText" class="text-xl text-slate-300 leading-relaxed mb-6">
+                        To have the purchasing power of <span id="outTargetAmount2" class="text-white font-bold">₹0</span> today in the year <span id="outTargetYear2" class="text-white font-bold">2035</span>, you actually need to aim for:
+                    </h3>
+                    <div id="requiredAmountDisplay" class="text-5xl md:text-6xl font-black text-blue-400 tracking-tight mb-8">₹0</div>
+                    
+                    <div class="flex flex-col gap-4">
+                        <button id="calculateGoalBtn" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-900/40">
+                            Calculate My Goal
+                        </button>
+                        <button id="jumpToRunwayBtn" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/40 opacity-50 cursor-not-allowed">
+                            Explore Runway with this Goal
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Runway Calculator View -->
+        <div id="runwayView" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <!-- Runway Inputs -->
+            <section class="glass p-8 rounded-3xl space-y-6 lg:col-span-1">
+                <h2 class="text-xl font-semibold border-b border-slate-700 pb-4">Runway Parameters</h2>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-400">Current Savings (Pulled from Goal)</label>
+                    <input type="text" id="runwaySavingsInput" class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl py-3 px-4 text-xl font-bold text-blue-400">
+                </div>
+
+                <div class="space-y-2 text-emerald-400">
+                    <label class="block text-sm font-medium text-emerald-400/70">Monthly Expense (of TODAY)</label>
+                    <input type="text" id="runwayExpenseTodayInput" placeholder="e.g. 50,000" class="w-full bg-emerald-950/20 border-2 border-emerald-900/50 rounded-xl py-3 px-4 text-xl font-bold">
+                    <p class="text-[10px] text-emerald-600">This will grow with inflation until your target year.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-400">Invest Return (%)</label>
+                        <input type="number" id="runwayReturnInput" value="5" class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl py-2 px-3 text-lg font-bold">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-slate-400">Retire. Inflation (%)</label>
+                        <input type="number" id="runwayInflationInput" value="5" class="w-full bg-slate-800 border-2 border-slate-700 rounded-xl py-2 px-3 text-lg font-bold">
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-2">
+                    <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                        <p class="text-xs font-semibold text-slate-500 uppercase mb-2">Optional Adjustments</p>
+                        <div class="space-y-3">
+                            <input type="text" id="runwayEmergencyInput" placeholder="Emergency Fund (Deductible)" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-sm">
+                            <input type="text" id="runwaySideIncomeInput" placeholder="Monthly Side Income" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-sm">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Runway Results -->
+            <section class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass p-6 rounded-3xl border-emerald-500/20 border">
+                        <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Adjusted Monthly Expense</p>
+                        <div class="flex items-baseline gap-2">
+                            <span id="runwayExpenseFutureDisplay" class="text-3xl font-bold text-white">₹0</span>
+                            <span class="text-xs text-slate-500">at start of goal year</span>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-3xl border-blue-500/20 border">
+                        <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Total Runway</p>
+                        <div class="flex items-baseline gap-2">
+                            <span id="runwayYearsDisplay" class="text-3xl font-bold text-blue-400">0 Years</span>
+                            <span id="runwayMonthsDisplay" class="text-sm text-slate-400">0 months</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-8 rounded-3xl">
+                    <h3 class="text-lg font-semibold mb-6">Savings Burn-down Projection</h3>
+                    <div class="relative h-[400px] w-full">
+                        <canvas id="runwayChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="mt-16 text-slate-600 text-xs text-center border-t border-slate-800 pt-8 w-full max-w-5xl">
+        Vibe-Coded with no Financial Awareness | The True Goal &copy; 2026
+    </footer>
+
+    <script>
+        const targetAmountInput = document.getElementById('targetAmountInput');
+        const targetYearInput = document.getElementById('targetYearInput');
+        const currentYearInput = document.getElementById('currentYearInput');
+        const inflationRateSlider = document.getElementById('inflationRateSlider');
+        const inflationValueLabel = document.getElementById('inflationValue');
+        const timeTravelAlert = document.getElementById('timeTravelAlert');
+        const jumpToRunwayBtn = document.getElementById('jumpToRunwayBtn');
+        const calculateGoalBtn = document.getElementById('calculateGoalBtn');
+        const mainGoalText = document.getElementById('mainGoalText');
+        
+        const outTargetYear2 = document.getElementById('outTargetYear2');
+        const outTargetAmount2 = document.getElementById('outTargetAmount2');
+        const requiredAmountDisplay = document.getElementById('requiredAmountDisplay');
+        const amountHint = document.getElementById('amountHint');
+
+        // Runway Elements
+        const runwaySavingsInput = document.getElementById('runwaySavingsInput');
+        const runwayExpenseTodayInput = document.getElementById('runwayExpenseTodayInput');
+        const runwayReturnInput = document.getElementById('runwayReturnInput');
+        const runwayInflationInput = document.getElementById('runwayInflationInput');
+        const runwayEmergencyInput = document.getElementById('runwayEmergencyInput');
+        const runwaySideIncomeInput = document.getElementById('runwaySideIncomeInput');
+        const runwayExpenseFutureDisplay = document.getElementById('runwayExpenseFutureDisplay');
+        const runwayYearsDisplay = document.getElementById('runwayYearsDisplay');
+        const runwayMonthsDisplay = document.getElementById('runwayMonthsDisplay');
+        
+        let runwayChart = null;
+
+        // View Toggles
+        const coreView = document.getElementById('coreView');
+        const runwayView = document.getElementById('runwayView');
+        const viewCoreBtn = document.getElementById('viewCoreBtn');
+        const viewRunwayBtn = document.getElementById('viewRunwayBtn');
+
+        function switchTab(view) {
+            if (view === 'core') {
+                coreView.classList.remove('hidden');
+                runwayView.classList.add('hidden');
+                viewCoreBtn.classList.add('tab-active');
+                viewRunwayBtn.classList.remove('tab-active');
+            } else {
+                coreView.classList.add('hidden');
+                runwayView.classList.remove('hidden');
+                viewCoreBtn.classList.remove('tab-active');
+                viewRunwayBtn.classList.add('tab-active');
+                calculateRunway();
+            }
+        }
+
+        viewCoreBtn.addEventListener('click', () => switchTab('core'));
+        viewRunwayBtn.addEventListener('click', () => switchTab('runway'));
+        jumpToRunwayBtn.addEventListener('click', () => {
+            const val = requiredAmountDisplay.innerText.replace(/[₹$,]/g, '');
+            runwaySavingsInput.value = formatNumber(parseFloat(val));
+            switchTab('runway');
+        });
+
+        // Initial setup
+        const now = new Date();
+        currentYearInput.value = now.getFullYear();
+
+        function isIndianContext(val) {
+            return val.toLowerCase().includes('cr') || val.toLowerCase().includes('lakh') || /(^|\s)\d{1,2},\d{2}/.test(val);
+        }
+
+        function formatNumber(num, useIndian = true) {
+            if (isNaN(num)) return "0";
+            const formatter = useIndian ? new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }) : new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+            return formatter.format(num);
+        }
+
+        function parseAmount(val) {
+            let cleanVal = val.replace(/,/g, '').toLowerCase();
+            let multiplier = 1;
+            if (cleanVal.includes('cr')) { multiplier = 10000000; cleanVal = cleanVal.replace('cr', ''); }
+            else if (cleanVal.includes('lakh')) { multiplier = 100000; cleanVal = cleanVal.replace('lakh', ''); }
+            const num = parseFloat(cleanVal) * multiplier;
+            return isNaN(num) ? 0 : num;
+        }
+
+        function calculate() {
+            const rawAmount = targetAmountInput.value;
+            const amount = parseAmount(rawAmount);
+            const targetYear = parseInt(targetYearInput.value);
+            const currentYear = parseInt(currentYearInput.value);
+            const rate = parseFloat(inflationRateSlider.value) / 100;
+            const years = targetYear - currentYear;
+
+            const isIndian = isIndianContext(rawAmount);
+            const symbol = isIndian ? "₹" : "$";
+            
+            // Just update simple labels for real-time feel
+            inflationValueLabel.innerText = (rate * 100).toFixed(1) + "%";
+            if (amount >= 10000000) amountHint.innerText = (amount / 10000000).toFixed(2) + " Crore";
+            else if (amount >= 100000) amountHint.innerText = (amount / 100000).toFixed(2) + " Lakh";
+            else amountHint.innerText = "";
+        }
+
+        calculateGoalBtn.addEventListener('click', () => {
+            const rawAmount = targetAmountInput.value;
+            const amount = parseAmount(rawAmount);
+            const targetYear = parseInt(targetYearInput.value);
+            const currentYear = parseInt(currentYearInput.value);
+            const rate = parseFloat(inflationRateSlider.value) / 100;
+            const years = targetYear - currentYear;
+            const isIndian = isIndianContext(rawAmount);
+            const symbol = isIndian ? "₹" : "$";
+
+            const requiredAmount = amount * Math.pow(1 + rate, years);
+            const formattedGoal = symbol + formatNumber(amount, isIndian);
+            
+            outTargetAmount2.innerText = formattedGoal;
+            outTargetYear2.innerText = targetYear;
+            requiredAmountDisplay.innerText = symbol + formatNumber(requiredAmount, isIndian);
+            
+            if (years < 0) {
+                timeTravelAlert.classList.remove('hidden');
+                timeTravelAlert.innerText = `Hello, time traveller! Scaling your today's lifestyle back to ${targetYear}...`;
+                mainGoalText.innerHTML = `To have the purchasing power of <span class="text-white font-bold">${formattedGoal}</span> today in the year <span class="text-white font-bold">${targetYear}</span>, your past goal should have been:`;
+            } else if (years > 0) {
+                timeTravelAlert.classList.add('hidden');
+                mainGoalText.innerHTML = `To have the purchasing power of <span class="text-white font-bold">${formattedGoal}</span> today in the year <span class="text-white font-bold">${targetYear}</span>, you actually need to aim for:`;
+            } else {
+                timeTravelAlert.classList.add('hidden');
+                mainGoalText.innerHTML = `Targeting today? Your goal is exactly:`;
+            }
+
+            jumpToRunwayBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        function calculateRunway() {
+            const savings = parseAmount(runwaySavingsInput.value);
+            const emergency = parseAmount(runwayEmergencyInput.value || "0");
+            const monthlyExpenseToday = parseAmount(runwayExpenseTodayInput.value || "0");
+            const returns = parseFloat(runwayReturnInput.value || "0") / 100 / 12;
+            const inflation = parseFloat(runwayInflationInput.value || "0") / 100 / 12;
+            const sideIncome = parseAmount(runwaySideIncomeInput.value || "0");
+            
+            const targetYear = parseInt(targetYearInput.value);
+            const currentYear = parseInt(currentYearInput.value);
+            const coreInflation = parseFloat(inflationRateSlider.value) / 100;
+            const yearsToWait = Math.max(0, targetYear - currentYear);
+
+            // Grow expense to future start date
+            let monthlyExpenseFuture = monthlyExpenseToday * Math.pow(1 + (coreInflation/12), yearsToWait * 12);
+            runwayExpenseFutureDisplay.innerText = "₹" + formatNumber(monthlyExpenseFuture);
+
+            let currentPot = savings - emergency;
+            let months = 0;
+            let dataPoints = [currentPot];
+            let labels = ["Start"];
+
+            if (monthlyExpenseFuture > sideIncome || currentPot > 0) {
+                while (currentPot > 0 && months < 600) { // Cap at 50 years to avoid infinite
+                    currentPot = currentPot * (1 + returns);
+                    currentPot += sideIncome;
+                    currentPot -= monthlyExpenseFuture;
+                    monthlyExpenseFuture *= (1 + inflation);
+                    
+                    months++;
+                    if (months % 12 === 0 || currentPot <= 0) {
+                        dataPoints.push(Math.max(0, currentPot));
+                        labels.push(`Year ${months/12}`);
+                    }
+                }
+            }
+
+            runwayYearsDisplay.innerText = Math.floor(months / 12) + " Years";
+            runwayMonthsDisplay.innerText = (months % 12) + " months";
+
+            updateChart(labels, dataPoints);
+        }
+
+        function updateChart(labels, data) {
+            const ctx = document.getElementById('runwayChart').getContext('2d');
+            if (runwayChart) runwayChart.destroy();
+            
+            runwayChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Remaining Savings',
+                        data: data,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8', callback: value => '₹' + formatNumber(value) }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        [targetAmountInput, targetYearInput, currentYearInput, inflationRateSlider].forEach(el => el.addEventListener('input', calculate));
+        [runwaySavingsInput, runwayExpenseTodayInput, runwayReturnInput, runwayInflationInput, runwayEmergencyInput, runwaySideIncomeInput].forEach(el => {
+            el.addEventListener('input', () => {
+                if (el.id.includes('Input') && !el.id.includes('Return') && !el.id.includes('Inflation')) {
+                    const raw = el.value.replace(/,/g, '');
+                    if (!isNaN(raw) && raw !== "") el.value = formatNumber(parseFloat(raw));
+                }
+                calculateRunway();
+            });
+        });
+
+        calculate();
+
+    </script>
+</body>
+</html>
