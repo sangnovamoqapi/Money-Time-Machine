@@ -260,7 +260,7 @@
         currentYearInput.value = now.getFullYear();
 
         function isIndianContext(val) {
-            return val.toLowerCase().includes('cr') || val.toLowerCase().includes('lakh') || /(^|\s)\d{1,2},\d{2}/.test(val);
+            return val.includes('₹') || val.toLowerCase().includes('cr') || val.toLowerCase().includes('lakh') || /(^|\s)\d{1,2},\d{2}/.test(val) || (parseAmount(val) >= 100000 && !val.includes('$'));
         }
 
         function formatNumber(num, useIndian = true) {
@@ -270,7 +270,8 @@
         }
 
         function parseAmount(val) {
-            let cleanVal = val.replace(/,/g, '').toLowerCase();
+            if (!val) return 0;
+            let cleanVal = val.replace(/[₹$,]/g, '').toLowerCase();
             let multiplier = 1;
             if (cleanVal.includes('cr')) { multiplier = 10000000; cleanVal = cleanVal.replace('cr', ''); }
             else if (cleanVal.includes('lakh')) { multiplier = 100000; cleanVal = cleanVal.replace('lakh', ''); }
@@ -284,12 +285,7 @@
             const targetYear = parseInt(targetYearInput.value);
             const currentYear = parseInt(currentYearInput.value);
             const rate = parseFloat(inflationRateSlider.value) / 100;
-            const years = targetYear - currentYear;
-
-            const isIndian = isIndianContext(rawAmount);
-            const symbol = isIndian ? "₹" : "$";
             
-            // Just update simple labels for real-time feel
             inflationValueLabel.innerText = (rate * 100).toFixed(1) + "%";
             if (amount >= 10000000) amountHint.innerText = (amount / 10000000).toFixed(2) + " Crore";
             else if (amount >= 100000) amountHint.innerText = (amount / 100000).toFixed(2) + " Lakh";
@@ -309,18 +305,31 @@
             const requiredAmount = amount * Math.pow(1 + rate, years);
             const formattedGoal = symbol + formatNumber(amount, isIndian);
             
+            // Format the input field itself if it was a plain number
+            if (!rawAmount.includes(',') && !rawAmount.toLowerCase().includes('lakh') && !rawAmount.toLowerCase().includes('cr')) {
+                targetAmountInput.value = formatNumber(amount, isIndian);
+            }
+
             outTargetAmount2.innerText = formattedGoal;
             outTargetYear2.innerText = targetYear;
             requiredAmountDisplay.innerText = symbol + formatNumber(requiredAmount, isIndian);
             
             if (years < 0) {
-                timeTravelAlert.classList.remove('hidden');
-                timeTravelAlert.innerText = `Hello, time traveller! Scaling your today's lifestyle back to ${targetYear}...`;
+                // Case: Target Year is in the past relative to Current Year
+                if (!localStorage.getItem('hasSeenTimeTravelAlert')) {
+                    timeTravelAlert.classList.remove('hidden');
+                    timeTravelAlert.innerText = `Hello, time traveller! Scaling your today's lifestyle back to ${targetYear} from ${currentYear}`;
+                    localStorage.setItem('hasSeenTimeTravelAlert', 'true');
+                } else {
+                    timeTravelAlert.classList.add('hidden');
+                }
                 mainGoalText.innerHTML = `To have the purchasing power of <span class="text-white font-bold">${formattedGoal}</span> today in the year <span class="text-white font-bold">${targetYear}</span>, your past goal should have been:`;
             } else if (years > 0) {
+                // Case: Target Year is in the future relative to Current Year
                 timeTravelAlert.classList.add('hidden');
                 mainGoalText.innerHTML = `To have the purchasing power of <span class="text-white font-bold">${formattedGoal}</span> today in the year <span class="text-white font-bold">${targetYear}</span>, you actually need to aim for:`;
             } else {
+                // Case: Current and Target years are the same
                 timeTravelAlert.classList.add('hidden');
                 mainGoalText.innerHTML = `Targeting today? Your goal is exactly:`;
             }
